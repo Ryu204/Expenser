@@ -2,7 +2,7 @@
 
 namespace Expenser.Core
 {
-    public readonly struct Command
+    public class Command
     {
         public string Action { get; }
         public HashSet<string> Flags { get; }

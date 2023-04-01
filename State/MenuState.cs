@@ -1,45 +1,61 @@
 ﻿using Expenser.Core;
+using Expenser.User;
+using Expenser.Utility;
 
 namespace Expenser.State
 {
+    /// <summary>
+    /// The initial state of the program
+    /// </summary>
     public class MenuState : IState
     {
+        private readonly Account account = new();
         public MenuState(StateStack stack)
             : base(stack)
-        { }
-
-        public override void Init()
         {
-            Console.WriteLine("Menu initialized.");
+            RuleChecker rule1 = new("login", new Type[] { typeof(string) });
+            Function func1 = Login;
+            AddAction(rule1, func1);
+
+            RuleChecker rule2 = new("logout", Array.Empty<Type>());
+            Function func2 = Logout;
+            AddAction(rule2, func2);
         }
 
-        public override bool ValidateCommand(Command command, ref string message)
+        private void Login()
         {
-            if (command.Action == "help" || command.Action == "restart")
-                return true;
-            else
+            Context context = GetContext();
+
+            if (context.User != string.Empty)
             {
-                message = "No action called " + command.Action + " in current context";
-                return false;
+                IOStream.Output($"You must log out first, {context.User}.");
+                return;
+            }
+
+            string username = context.CurrentCommand.Value[0];
+            if (!char.IsLetter(username[0]))
+            {
+                IOStream.Output($"An username must start with a character.");
+                return;
+            }
+
+            if (account.SetUser(username)) 
+            {
+                context.User = username;
+                IOStream.Output($"Hello {username}. You currently have {account.Value:N0} VND in your account.");
             }
         }
 
-        public override void ProcessCommand(Command command)
+        private void Logout()
         {
-            if (command.Action == "help")
+            Context context = GetContext();
+
+            if (context.User == string.Empty)
             {
-                if (command.Flags.Contains("other"))
-                {
-                    Console.Write("(-v-)//\t");
-                    foreach (string val in command.Value)
-                        Console.Write($"{ val } \t");
-                    Console.WriteLine();
-                }
-                else
-                    Console.WriteLine("I am sorry, there is currently no help available.");
+                IOStream.Output("You have not logged in");
+                return;
             }
-            else if (command.Action == "restart")
-                SwitchTo("Menu");
+            context.Reset();
         }
     }
 }

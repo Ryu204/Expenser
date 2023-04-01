@@ -4,15 +4,21 @@ using Expenser.State;
 
 namespace Expenser.Core
 {
+
+    /// <summary>
+    /// Control which state of the program is active
+    /// </summary>
     public class StateStack
     {
         private readonly Dictionary<string, IState> statePool = new();
+
+        private Context currentContext = new();
+
         private string currentState = string.Empty;
         private string pendingState = string.Empty;
         private bool popCurrentState = false;
 
-        private IOStream ios = new();
-
+        // All IState subclass must be registered here
         public StateStack()
         {
             RegisterState("Menu", new MenuState(this));
@@ -20,29 +26,7 @@ namespace Expenser.Core
             currentState = "Menu";
         }
 
-        void RegisterState(string ID, IState state)
-        {
-            Debug.Assert(state != null && !statePool.ContainsKey(ID));
-            state.Init();
-            statePool[ID] = state;
-        }
-
-        bool ExecuteCommand(Command command)
-        {
-            string message = string.Empty;
-            if (statePool[currentState].ValidateCommand(command, ref message))
-            {
-                statePool[currentState].ProcessCommand(command);
-                return true;
-            }
-            else
-            {
-                ios.Output(message);
-                return false;
-            }
-        }
-
-        public void RegisterSwitch(string newState)
+        public void RegisterSwitchState(string newState)
         {
             Debug.Assert(statePool.ContainsKey(newState));
             popCurrentState = true;
@@ -51,14 +35,14 @@ namespace Expenser.Core
 
         public void Process()
         {
-            Command input = ios.ParseCommand();
-            while (ios.State != IOStream.InputState.OKAY)
+            Command command = IOStream.ParseCommand();
+            while (IOStream.State != IOStream.InputState.OKAY)
             {
-                ios.Output(ios.Message);
-                input = ios.ParseCommand();
+                IOStream.Output(IOStream.Message);
+                command = IOStream.ParseCommand();
             }
 
-            ExecuteCommand(input);
+            ExecuteCommand(command);
 
             if (popCurrentState)
             {
@@ -66,6 +50,32 @@ namespace Expenser.Core
                 currentState = pendingState;
                 statePool[currentState].Init();
             }
+        }
+
+        // Only give access to the current State
+        // via stack.GetContext(this)
+        public Context GetContext(IState requester)
+        {
+            Debug.Assert(requester == statePool[currentState]);
+            return currentContext;
+        }
+
+        private void RegisterState(string ID, IState state)
+        {
+            Debug.Assert(state != null && !statePool.ContainsKey(ID));
+            state.Init();
+            statePool[ID] = state;
+        }
+
+        private void ExecuteCommand(Command command)
+        {
+            if (statePool[currentState].ValidateCommand(command))
+            {
+                currentContext.CurrentCommand = command;
+                statePool[currentState].ProcessCommand();
+            }
+            else
+                IOStream.Output(IState.ErrorMessage);
         }
     }
 }

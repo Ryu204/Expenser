@@ -1,43 +1,41 @@
-﻿/*
-    A string Str is:
-    1. An action <-> Str consists of >= 1 letter
-                     All characters of Str is letter
-    2. A flag <-> Str = "--" + An Action
-*/
- using System.Diagnostics;
+﻿using System.Diagnostics;
+using Expenser.Utility;
 
 namespace Expenser.Core
 {
+    /// <summary>
+    /// Parse input string by given rules:
+    ///     * First word is action
+    ///     * Flags start with "--"
+    ///     * Others are values
+    /// </summary>
     static public class CommandParser
     {
-        public static readonly char FlagChar = '-';
-
-        private static bool IsAllLetter(string input)
-        {
-            foreach (char c in input) 
-                if (!char.IsLetter(c))
-                    return false;
-            return true;
-        }
+        public static readonly string FlagSignature = "--";
 
         public static bool IsAction(string input)
         {
-            return IsAllLetter(input) && input.Length > 0;
+            return IOStream.IsAllLetter(input) && input.Length > 0;
         }
 
         public static bool IsFlag(string input)
         {
-            if (input.Length <= 1 || !input.StartsWith(FlagChar))
+            if (input.Length <= FlagSignature.Length || !input.StartsWith(FlagSignature))
                 return false;
-            if (!IsAllLetter(input[1..]))
+            if (!IOStream.IsAllLetter(input[FlagSignature.Length..]))
                 return false;
             return true;
         }
 
-        public static string TrimFlag(string flag)
+        public static string FormatFlag(string flag)
         {
             Debug.Assert(IsFlag(flag));
-            return flag[1..];
+            return flag[FlagSignature.Length..];
+        }
+
+        public static string FormatAction(string action)
+        {
+            return action.ToLower();
         }
     }
 }
