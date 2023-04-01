@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Net.NetworkInformation;
 
 namespace Expenser.Core
 { 
@@ -34,6 +35,9 @@ namespace Expenser.Core
                 ErrorMessage = $"There is no action called \"{command.Action}\" in current context.";
                 return false;
             }
+
+            // How many rules that have the same arguments number with the command
+            uint matchArgumentCount = 0;
             // Check if the action's name is valid
             foreach (var action in actions)
             {
@@ -44,8 +48,15 @@ namespace Expenser.Core
                     callbackKey = action.Key;
                     return true;
                 }
+                else if (command.Action == action.Key.Action && 
+                    command.Value.Length == action.Key.Arguments.Length)
+                    ++matchArgumentCount;
             }
-            ErrorMessage = $"There is no call to action \"{command.Action}\" that takes {command.Value.Length} value(s).";
+            if (matchArgumentCount == 0)
+                ErrorMessage = $"There is no call to action \"{command.Action}\" that takes {command.Value.Length} value(s).";
+            else
+                ErrorMessage = $"There are {matchArgumentCount} way(s) to call action {command.Action} "
+                               + $"with {command.Value.Length} value(s), but the signatures mismatch.";
             return false;
         }
 
@@ -67,6 +78,10 @@ namespace Expenser.Core
             stack.RegisterSwitchState(state);
         }
 
+        protected void CloseStack()
+        {
+            stack.Empty = true;
+        }
         protected Context GetContext()
         {
             return stack.GetContext(this);

@@ -10,7 +10,7 @@ namespace Expenser.Core
     public class RuleChecker
     {
         public string Action { get; }
-        private Type[] Arguments { get; }
+        public Type[] Arguments { get; }
 
         public RuleChecker(string action, Type[] types)
         {

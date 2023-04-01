@@ -10,6 +10,7 @@ namespace Expenser.State
     public class MenuState : IState
     {
         private readonly Account account = new();
+
         public MenuState(StateStack stack)
             : base(stack)
         {
@@ -20,6 +21,14 @@ namespace Expenser.State
             RuleChecker rule2 = new("logout", Array.Empty<Type>());
             Function func2 = Logout;
             AddAction(rule2, func2);
+
+            RuleChecker rule3 = new("add", new Type[] { typeof(uint) });
+            Function func3 = Add;
+            AddAction(rule3, func3);
+
+            RuleChecker rule4 = new("exit", Array.Empty<Type>());
+            Function func4 = Exit;
+            AddAction(rule4, func4);
         }
 
         private void Login()
@@ -28,14 +37,14 @@ namespace Expenser.State
 
             if (context.User != string.Empty)
             {
-                IOStream.Output($"You must log out first, {context.User}.");
+                IOStream.OutputError($"You must log out first, {context.User}.");
                 return;
             }
 
             string username = context.CurrentCommand.Value[0];
             if (!char.IsLetter(username[0]))
             {
-                IOStream.Output($"An username must start with a character.");
+                IOStream.OutputError($"An username must start with a character.");
                 return;
             }
 
@@ -52,10 +61,36 @@ namespace Expenser.State
 
             if (context.User == string.Empty)
             {
-                IOStream.Output("You have not logged in");
+                IOStream.OutputError("You have not logged in.");
                 return;
             }
+            account.SaveUserData();
+            IOStream.Output("Logged out.");
             context.Reset();
+        }
+
+        private void Add()
+        {
+            Context context = GetContext();
+
+            if (string.IsNullOrWhiteSpace(context.User))
+            {
+                IOStream.OutputError("You have not loggin in.");
+                return;
+            }
+
+            uint increment = uint.Parse(context.CurrentCommand.Value[0]);
+            if (account.Add(increment))
+                IOStream.Output($"Added {increment:N0} VND to user {account.Username}'s account. You now have {account.Value:N0} VND.");
+        }
+
+        private void Exit()
+        {
+            if (!string.IsNullOrWhiteSpace(GetContext().User))
+                account.SaveUserData();
+
+            IOStream.Output("Goodbye.");
+            CloseStack();
         }
     }
 }

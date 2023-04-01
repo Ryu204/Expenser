@@ -14,12 +14,16 @@ namespace Expenser
             {
                 StateStack stack = new();
                 while (true)
+                {
                     stack.Process();
+                    if (stack.Empty)
+                        break;
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("An exception occured. Here is the detailed description:");
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine("An exception occured:");
+                Console.WriteLine(ex.Message);
             }
         }
     }

@@ -1,4 +1,5 @@
-﻿using Expenser.Core;
+﻿using System;
+using Expenser.Core;
 
 namespace Expenser.Utility
 {
@@ -12,23 +13,60 @@ namespace Expenser.Utility
         { 
             OKAY, EMPTY, INVALID_ACTION, INVALID_FLAG
         }
-        private static List<string> errorMessages = new() {
+        private static string[] errorMessages = {
             "okay (should not be printed)",
-            "empty line",
-            "invalid action",
-            "invalid flag"
+            "Empty line",
+            "Invalid action format (Must only consist of alphabetical characters)",
+            "Invalid flag format (Example for flag: \"--short\",\"--force\")"
         };
             
         public static InputState State { get; private set; }
-        public static string Message { get { return "ios: " + errorMessages[(int)State]; } }
+        public static string Message { get { return $"Input error: {errorMessages[(int)State]}."; } }
 
-        public static void Output(string message)
+        private enum ColorCode
         {
+            NORMAL, ERROR, OTHER, DEFAULT
+        }
+        private static ConsoleColor[] Colors = {
+            ConsoleColor.Green,
+            ConsoleColor.Red,
+            ConsoleColor.Yellow,
+            ConsoleColor.White
+        };
+
+        public static void Output(string message, bool newline = true)
+        {
+            Console.ForegroundColor = Colors[(int)ColorCode.NORMAL];
+            if (newline)
+                Console.WriteLine(message);
+            else
+                Console.Write(message);
+            Console.ForegroundColor = Colors[(int)ColorCode.DEFAULT];
+        }
+
+        public static void OutputError(string message)
+        {
+            Console.ForegroundColor = Colors[(int)ColorCode.ERROR];
             Console.WriteLine(message);
+            Console.ForegroundColor = Colors[(int)ColorCode.DEFAULT];
+        }
+
+        public static void OutputOther(string message)
+        {
+            Console.ForegroundColor = Colors[(int)ColorCode.OTHER];
+            Console.WriteLine(message);
+            Console.ForegroundColor = Colors[(int)ColorCode.DEFAULT];
+        }
+
+        public static void PromptInput()
+        {
+            Console.Write(">>> ");
         }
 
         public static Command ParseCommand()
         {
+            PromptInput();
+
             string[] input = GetInputString();
 
             if (input.Length == 0)

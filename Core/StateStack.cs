@@ -10,6 +10,7 @@ namespace Expenser.Core
     /// </summary>
     public class StateStack
     {
+        public bool Empty { get; set; }
         private readonly Dictionary<string, IState> statePool = new();
 
         private Context currentContext = new();
@@ -38,7 +39,7 @@ namespace Expenser.Core
             Command command = IOStream.ParseCommand();
             while (IOStream.State != IOStream.InputState.OKAY)
             {
-                IOStream.Output(IOStream.Message);
+                IOStream.OutputError(IOStream.Message);
                 command = IOStream.ParseCommand();
             }
 
@@ -75,7 +76,7 @@ namespace Expenser.Core
                 statePool[currentState].ProcessCommand();
             }
             else
-                IOStream.Output(IState.ErrorMessage);
+                IOStream.OutputError(IState.ErrorMessage);
         }
     }
 }
