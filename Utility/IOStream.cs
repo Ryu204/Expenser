@@ -13,7 +13,7 @@ namespace Expenser.Utility
         { 
             OKAY, EMPTY, INVALID_ACTION, INVALID_FLAG
         }
-        private static string[] errorMessages = {
+        private static readonly string[] errorMessages = {
             "okay (should not be printed)",
             "Empty line",
             "Invalid action format (Must only consist of alphabetical characters)",
@@ -27,7 +27,7 @@ namespace Expenser.Utility
         {
             NORMAL, ERROR, OTHER, DEFAULT
         }
-        private static ConsoleColor[] Colors = {
+        private static readonly ConsoleColor[] Colors = {
             ConsoleColor.Green,
             ConsoleColor.Red,
             ConsoleColor.Yellow,

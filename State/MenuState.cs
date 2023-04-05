@@ -29,6 +29,10 @@ namespace Expenser.State
             RuleChecker rule4 = new("exit", Array.Empty<Type>());
             Function func4 = Exit;
             AddAction(rule4, func4);
+
+            RuleChecker rule5 = new("signup", Array.Empty<Type>());
+            Function func5 = Signup;
+            AddAction(rule5, func5);
         }
 
         private void Login()
@@ -64,9 +68,25 @@ namespace Expenser.State
                 IOStream.OutputError("You have not logged in.");
                 return;
             }
-            account.SaveUserData();
+            account.SaveUsersData();
             IOStream.Output("Logged out.");
             context.Reset();
+        }
+
+        private void Signup()
+        {
+            Context context = GetContext();
+            if (context.User != string.Empty)
+            {
+                IOStream.OutputError("You must logout first.");
+                return;
+            }
+
+            if (account.Signup())
+            {
+                context.Reset();
+                context.User = account.Username;
+            }
         }
 
         private void Add()
@@ -87,8 +107,8 @@ namespace Expenser.State
         private void Exit()
         {
             if (!string.IsNullOrWhiteSpace(GetContext().User))
-                account.SaveUserData();
-
+                account.SaveUsersData();
+            
             IOStream.Output("Goodbye.");
             CloseStack();
         }

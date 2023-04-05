@@ -55,7 +55,7 @@ namespace Expenser.Core
             if (matchArgumentCount == 0)
                 ErrorMessage = $"There is no call to action \"{command.Action}\" that takes {command.Value.Length} value(s).";
             else
-                ErrorMessage = $"There are {matchArgumentCount} way(s) to call action {command.Action} "
+                ErrorMessage = $"There are {matchArgumentCount} way(s) to call action \"{command.Action}\" "
                                + $"with {command.Value.Length} value(s), but the signatures mismatch.";
             return false;
         }

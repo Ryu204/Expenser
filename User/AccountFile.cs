@@ -55,11 +55,11 @@ namespace Expenser.User
             string? pw = null;
             try
             {
-                while (pw != Password)
+                while (true)
                 {
                     IOStream.Output("Enter your password: ", false);
                     pw = Console.ReadLine();
-                    if (pw == Password)
+                    if (pw == password)
                         return true;
                     else
                     {
@@ -114,17 +114,57 @@ namespace Expenser.User
                     return false;
                 using (StreamReader reader = File.OpenText(path))
                 {
-                    TypeConverter toUInt = TypeDescriptor.GetConverter(Value);
-
-                    string? line = reader.ReadLine();
-                    if (string.IsNullOrWhiteSpace(line))
-                        return false;
-                    Password = line;
-
-                    line = reader.ReadLine();
-                    if (string.IsNullOrEmpty(line) || !toUInt.IsValid(line))
-                        return false;
-                    Value = uint.Parse(line);
+                    while (true)
+                    {
+                        string? identifier = reader.ReadLine();
+                        if (string.IsNullOrEmpty(identifier))
+                            return false;
+                        bool ended = false;
+                        switch (identifier)
+                        {
+                            case "Password":
+                                {
+                                    string? line = reader.ReadLine();
+                                    if (string.IsNullOrWhiteSpace(line))
+                                        return false;
+                                    password = line;
+                                }
+                                break;
+                            case "Value":
+                                {
+                                    string? line = reader.ReadLine();
+                                    if (string.IsNullOrEmpty(line) || !uint.TryParse(line, out uint tempValue))
+                                        return false;
+                                    Value = tempValue;
+                                }
+                                break;
+                            case "Transaction":
+                                {
+                                    string? line = reader.ReadLine();
+                                    if (string.IsNullOrEmpty(line) || !uint.TryParse(line, out uint count))
+                                        return false;
+                                    for (int i = 0; i < count; ++i)
+                                    {
+                                        Transaction tran = new();
+                                        if (Transaction.ReadFromStream(reader, ref tran))
+                                            transactions.Add(tran);
+                                        else
+                                        {
+                                            transactions.Clear();
+                                            return false;
+                                        }
+                                    }
+                                }
+                                break;
+                            case "End":
+                                ended = true;
+                                break;
+                            default:
+                                return false;
+                        }
+                        if (ended)
+                            break;
+                    }
 
                     reader.Close();
                 }
@@ -138,7 +178,7 @@ namespace Expenser.User
             }
         }
 
-        public bool SaveUserData()
+        public bool SaveUsersData()
         {
             string path = $"Users/{Username}.data";
 
@@ -146,8 +186,17 @@ namespace Expenser.User
             {
                 using (StreamWriter writer = File.CreateText(path))
                 {
-                    writer.WriteLine(Password);
-                    writer.WriteLine(Value);
+                    writer.WriteLine($"Password\n{password}");
+                    writer.WriteLine($"Value\n{Value}");
+                    writer.WriteLine($"Transaction\n{ transactions.Count}");
+                    foreach (Transaction tran in transactions)
+                        tran.WriteToStream(writer);
+                    writer.WriteLine("End");
+                }
+                using (StreamWriter writer = File.CreateText("Users/userlist.list"))
+                {
+                    foreach (string name in registeredUsers)
+                        writer.WriteLine(name);
                 }
             }
             catch(Exception)
