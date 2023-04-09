@@ -1,20 +1,15 @@
 ﻿using System;
+using static Expenser.Utility.IOStream;
 
 namespace Expenser.Core
 {
     public class Command
     {
-        public string Action { get; }
-        public HashSet<string> Flags { get; }
-        public string[] Value { get; }
+        public string Action { get; } = string.Empty;
+        public HashSet<string> Flags { get; } = new();
+        public string[] Value { get; } = Array.Empty<string>();
 
-        public Command()
-        {
-            Action = string.Empty;
-            Flags = new();
-            Value = Array.Empty<string>();
-        }
-
+        public Command() { }
         public Command(string action, HashSet<string> flags, string[] value)
         {
             Action = action;

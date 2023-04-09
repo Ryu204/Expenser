@@ -62,7 +62,7 @@ namespace Expenser.User
             {
                 IOStream.Output("Enter your username: ", false);
                 name = Console.ReadLine();
-                if (string.IsNullOrEmpty(name) || name.Length <= 2 || !IOStream.IsAllLetter(name))
+                if (string.IsNullOrEmpty(name) || name.Length <= 2 || !GrammarChecker.IsAllLetter(name))
                 {
                     IOStream.OutputError("A name must consists of only letters and have length at least 3. Special characters are not allowed.\nTry again? [y/n]");
                     string? confirm = Console.ReadLine();
