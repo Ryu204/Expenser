@@ -80,7 +80,7 @@ namespace Expenser.Core
 
         protected void CloseStack()
         {
-            stack.Empty = true;
+            stack.RegisterClose();
         }
         protected Context GetContext()
         {

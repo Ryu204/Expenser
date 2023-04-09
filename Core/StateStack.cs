@@ -10,7 +10,7 @@ namespace Expenser.Core
     /// </summary>
     public class StateStack
     {
-        public bool Empty { get; set; }
+        public bool Empty { get { return currentState == string.Empty; } }
         private readonly Dictionary<string, IState> statePool = new();
 
         private Context currentContext = new();
@@ -34,13 +34,22 @@ namespace Expenser.Core
             pendingState = newState;
         }
 
+        public void RegisterClose()
+        {
+            popCurrentState = true;
+            pendingState = string.Empty;
+        }
+
         public void Process()
         {
-            Command command = IOStream.ParseCommand();
-            while (IOStream.State != IOStream.InputState.OKAY)
+            Debug.Assert(currentState != string.Empty);
+
+            string[] input = IOStream.GetInputAsArray();
+            Command command = new();
+            while (!CommandParser.TryParse(input, ref command, out string message))
             {
-                IOStream.OutputError(IOStream.Message);
-                command = IOStream.ParseCommand();
+                IOStream.OutputError(message);
+                input = IOStream.GetInputAsArray();
             }
 
             ExecuteCommand(command);

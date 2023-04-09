@@ -7,7 +7,7 @@ namespace Expenser.Core
     /// A rule is in the form "This action takes n 
     /// argument types: X1,X2,...,Xn respectively"
     /// </summary>
-    public class RuleChecker
+    public readonly struct RuleChecker
     {
         public string Action { get; }
         public Type[] Arguments { get; }
