@@ -42,7 +42,7 @@ namespace Expenser.Core
 
         public void Process()
         {
-            Debug.Assert(currentState != string.Empty);
+            Debug.Assert(!Empty);
 
             string[] input = IOStream.GetInputAsArray();
             Command command = new();
@@ -79,13 +79,14 @@ namespace Expenser.Core
 
         private void ExecuteCommand(Command command)
         {
-            if (statePool[currentState].ValidateCommand(command))
+            currentContext.CurrentCommand = command;
+            if (statePool[currentState].ValidateCommand(command, out string message))
             {
                 currentContext.CurrentCommand = command;
                 statePool[currentState].ProcessCommand();
             }
             else
-                IOStream.OutputError(IState.ErrorMessage);
+                IOStream.OutputError(message);
         }
     }
 }

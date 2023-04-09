@@ -23,6 +23,7 @@ namespace Expenser.Core
         public virtual void Init() { }
 
         // Should be checked before a call to ProcessCommand is made
+        // Check if the command matches a possible rule
         public bool ValidateCommand(Command command, out string message)
         {
             if (!commandNames.Contains(command.Action))
@@ -37,8 +38,6 @@ namespace Expenser.Core
             {
                 if (rule.Key.Check(command))
                 {
-                    // Update the Context
-                    GetContext().CurrentCommand = command;
                     callbackKey = rule.Key;
                     message = string.Empty;
                     return true;

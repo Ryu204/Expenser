@@ -87,7 +87,7 @@ namespace Expenser.Core
         public static string FormatFlag(string flag)
         {
             Debug.Assert(IsFlag(flag));
-            return flag[FlagSignature.Length..];
+            return flag[FlagSignature.Length..].ToLower();
         }
     }
 }
