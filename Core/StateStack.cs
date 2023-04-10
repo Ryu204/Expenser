@@ -10,11 +10,10 @@ namespace Expenser.Core
     /// </summary>
     public class StateStack
     {
-        public bool Empty { get { return currentState == string.Empty; } }
+        public bool Empty { get; private set; } = false;
         private readonly Dictionary<string, IState> statePool = new();
 
         private Context currentContext = new();
-
         private string currentState = string.Empty;
         private string pendingState = string.Empty;
         private bool popCurrentState = false;
@@ -46,8 +45,9 @@ namespace Expenser.Core
 
             string[] input = IOStream.GetInputAsArray();
             Command command = new();
-            while (!CommandParser.TryParse(input, ref command, out string message))
+            while (!Command.Parser.TryParse(input, ref command, out string message))
             {
+                message = $"Parser error: {message}.";
                 IOStream.OutputError(message);
                 input = IOStream.GetInputAsArray();
             }
@@ -57,6 +57,11 @@ namespace Expenser.Core
             if (popCurrentState)
             {
                 popCurrentState = false;
+                if (pendingState == string.Empty)
+                {
+                    Empty = true;
+                    return;
+                }
                 currentState = pendingState;
                 statePool[currentState].Init();
             }

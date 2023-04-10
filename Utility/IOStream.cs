@@ -35,10 +35,12 @@ namespace Expenser.Utility
             Console.ForegroundColor = Colors[(int)ColorCode.DEFAULT];
         }
 
-        public static void OutputOther(string message)
+        public static void OutputOther(string message, bool newline = true)
         {
             Console.ForegroundColor = Colors[(int)ColorCode.OTHER];
-            Console.WriteLine(message);
+            Console.Write(message);
+            if (newline)
+                Console.WriteLine();
             Console.ForegroundColor = Colors[(int)ColorCode.DEFAULT];
         }
 
@@ -62,16 +64,29 @@ namespace Expenser.Utility
             return res.Split(whitespaces.ToArray(), StringSplitOptions.RemoveEmptyEntries);
         }
 
-        public static bool TryGetFileName(string filename, ref string name)
+        public static string[] GetInputAsArray(StreamReader reader)
         {
-            string suffix = ".data";
-            if (string.IsNullOrWhiteSpace(filename) || !filename.EndsWith(suffix))
+            string? res = reader.ReadLine();
+            if (res == null)
+                return Array.Empty<string>();
+
+            HashSet<char> whitespaces = new();
+            foreach (char c in res)
+                if (char.IsWhiteSpace(c))
+                    whitespaces.Add(c);
+
+            return res.Split(whitespaces.ToArray(), StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        public static bool TryAgainPrompt()
+        {
+            OutputOther("Try again? [y/n] ", false);
+            string? inp = Console.ReadLine();
+            if (inp == null)
                 return false;
-            if (filename.Length <= suffix.Length)
+            inp = inp.Trim();
+            if (inp.ToLower() != "y")
                 return false;
-            if (!GrammarChecker.IsAllLetter(filename[..(filename.Length - suffix.Length)]))
-                return false;
-            name = filename[..(filename.Length - suffix.Length)];
             return true;
         }
     }

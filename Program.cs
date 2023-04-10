@@ -15,9 +15,9 @@ namespace Expenser
                 StateStack stack = new();
                 while (true)
                 {
-                    stack.Process();
                     if (stack.Empty)
                         break;
+                    stack.Process();
                 }
             }
             catch (Exception ex)

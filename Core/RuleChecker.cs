@@ -14,7 +14,7 @@ namespace Expenser.Core
 
         public RuleChecker(string action, Type[] types)
         {
-            Debug.Assert(CommandParser.IsAction(action));
+            Debug.Assert(Command.Parser.IsAction(action));
             Action = action;
             Arguments = types;
         }

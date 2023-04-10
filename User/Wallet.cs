@@ -1,4 +1,6 @@
 ﻿
+using Expenser.Utility;
+
 namespace Expenser.User
 {
     /// <summary>
@@ -13,5 +15,10 @@ namespace Expenser.User
         {
             Value = value;
         }   
+
+        public static bool IsWalletName(string name)
+        {
+            return GrammarChecker.IsAllLetter(name);
+        }
     }
 }

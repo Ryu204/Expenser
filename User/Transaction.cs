@@ -10,85 +10,33 @@ namespace Expenser.User
         private string walletName;
         private uint transactionValue;
 
-        public Transaction(Type type)
+        private enum Component
         {
-            this.type = type;
-            username = "_";
-            walletName = "_";
-            transactionValue = 0;
+            NONE = 0,
+            USERNAME = 1 << 0,
+            WALLETNAME = 1 << 1,
+            VALUE = 1 << 2,
+            VALID = 1 << 10,
         }
-        public bool WriteToStream(StreamWriter writer)
-        {
-            try
-            {
-                writer.WriteLine($"{type},{username},{walletName},{transactionValue}");
-            }
-            catch(Exception)
-            {
-                return false;
-            }
-            return true;
-        }
-
-        public static bool ReadFromStream(StreamReader reader, ref Transaction trans)
-        {
-            string? line = reader.ReadLine();
-            if (line == null)
-                return false;
-            string[] words = line.Split(',', StringSplitOptions.RemoveEmptyEntries);
-
-            if (words.Length != 4)
-                return false;
-
-            string username = words[1], walletName = words[2];
-
-            if (Enum.TryParse(words[0], out Type type) && uint.TryParse(words[3], out uint transactionValue))
-            {
-                Transaction res = new(type)
-                {
-                    Username = username,
-                    WalletName = walletName,
-                    transactionValue = transactionValue,
-                };
-                trans = res;
-                return true;
-            }
-            else
-                return false;
-        }
-            
         public enum Type
         {
-            _NONE = 0,
-            _USERNAME = 1 << 0,
-            _WALLETNAME = 1 << 1,
-            _VALUE = 1 << 2,
-            
-            _VALID = 1 << 10,
-
-            ADD = _USERNAME | _WALLETNAME | _VALUE | (_VALID << 1),
-            SUB = _USERNAME | _WALLETNAME | _VALUE | (_VALID << 2),
-            NEWWALLET = _USERNAME | _WALLETNAME | _VALUE | (_VALID << 3)
+            ADD = Component.USERNAME | Component.WALLETNAME | Component.VALUE | (Component.VALID << 1),
+            SUB = Component.USERNAME | Component.WALLETNAME | Component.VALUE | (Component.VALID << 2),
+            NEWWALLET = Component.USERNAME | Component.WALLETNAME | Component.VALUE | (Component.VALID << 3)
         }
 
-        public Type Operation
-        {
-            get
-            {
-                Debug.Assert(type > Type._VALID);
-                return type;
-            }
-        }
+        public Type Operation { get { return type; } }
         public string Username
         { 
             get
             {
-                Debug.Assert((type & Type._USERNAME) != 0);
+                Debug.Assert(((uint)type & (uint)Component.USERNAME) != 0);
                 return username;
             }
             set
             {
-                Debug.Assert((type & Type._USERNAME) != 0);
+                Debug.Assert(((uint)type & (uint)Component.USERNAME) != 0);
+                Debug.Assert(Account.IsUsername(value));
                 username = value;
             }
         }
@@ -96,12 +44,13 @@ namespace Expenser.User
         {
             get
             {
-                Debug.Assert((type & Type._WALLETNAME) != 0);
+                Debug.Assert(((uint)type & (uint)Component.WALLETNAME) != 0);
                 return walletName;
             }
             set
             {
-                Debug.Assert((type & Type._WALLETNAME) != 0);
+                Debug.Assert(((uint)type & (uint)Component.WALLETNAME) != 0);
+                Debug.Assert(Wallet.IsWalletName(value));
                 walletName = value;
             }
         }
@@ -109,13 +58,60 @@ namespace Expenser.User
         {
             get
             {
-                Debug.Assert((type & Type._VALUE) != 0);
+                Debug.Assert(((uint)type & (uint)Component.VALUE) != 0);
                 return transactionValue;
             }
             set
             {
-                Debug.Assert((type & Type._VALUE) != 0);
+                Debug.Assert(((uint)type & (uint)Component.VALUE) != 0);
                 transactionValue = value;
+            }
+        }
+
+        public Transaction(Type type)
+        {
+            this.type = type;
+            username = "None";
+            walletName = "None";
+            transactionValue = 0;
+        }
+
+        public static class Parser
+        {
+            public static bool WriteToStream(StreamWriter writer, Transaction tran)
+            {
+                try
+                {
+                    writer.WriteLine($"{tran.type} {tran.username} {tran.walletName} {tran.transactionValue}");
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+                return true;
+            }
+
+            public static bool TryParseFromStream(StreamReader reader, ref Transaction trans)
+            {
+                string[] words = IOStream.GetInputAsArray(reader);
+                if (words.Length != 4)
+                    return false;
+                if (!(Account.IsUsername(words[1]) && Wallet.IsWalletName(words[2])))
+                    return false;
+
+                string username = words[1], walletName = words[2];
+                if (Enum.TryParse(words[0], out Type type) && uint.TryParse(words[3], out uint transactionValue))
+                {
+                    trans = new(type)
+                    {
+                        Username = username,
+                        WalletName = walletName,
+                        Value = transactionValue,
+                    };
+                    return true;
+                }
+                else
+                    return false;
             }
         }
     }
