@@ -64,7 +64,7 @@ namespace Expenser.Utility
             return res.Split(whitespaces.ToArray(), StringSplitOptions.RemoveEmptyEntries);
         }
 
-        public static string[] GetInputAsArray(StreamReader reader)
+        public static string[] GetInputAsArray(StreamReader reader, char separator = ' ')
         {
             string? res = reader.ReadLine();
             if (res == null)
@@ -74,8 +74,10 @@ namespace Expenser.Utility
             foreach (char c in res)
                 if (char.IsWhiteSpace(c))
                     whitespaces.Add(c);
-
-            return res.Split(whitespaces.ToArray(), StringSplitOptions.RemoveEmptyEntries);
+            if  (separator == ' ')
+                return res.Split(whitespaces.ToArray(), StringSplitOptions.RemoveEmptyEntries);
+            else
+                return res.Split(separator, StringSplitOptions.RemoveEmptyEntries);
         }
 
         public static bool TryAgainPrompt()

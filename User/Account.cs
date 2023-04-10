@@ -15,17 +15,36 @@ namespace Expenser.User
     {
         public readonly string Password = string.Empty;
         public readonly List<Transaction> Transactions = new();
+        public readonly Dictionary<string, Wallet> Wallets = new();
 
         public string Username { get; private set; } = string.Empty;
-        public uint Value { get; private set; } = 0;
+        public ulong Value
+        {
+            get
+            {
+                ulong res = 0;
+                foreach (var pair in Wallets)
+                    res += pair.Value.Value;
+                return res;
+            }
+        }
 
         public Account() { }
-        public Account(string username, string password, uint value, List<Transaction> transactions)
+        public Account(string username, string password, List<Transaction> transactions, List<Wallet> wallets)
         {
             this.Password = password;
             this.Transactions = transactions;
             Username = username;
-            Value = value;
+
+            bool defaulWalletExist = false;
+            foreach (Wallet wallet in wallets)
+            {
+                Wallets.Add(wallet.Name, wallet);
+                defaulWalletExist = defaulWalletExist || (wallet.Name == Wallet.DefaultName);
+            }
+
+            if (!defaulWalletExist)
+                Wallets.Add(Wallet.DefaultName, new Wallet(Wallet.DefaultName, 0));
         }
 
         public static bool IsUsername(string username)
@@ -44,31 +63,45 @@ namespace Expenser.User
                 return true;
         }
 
-        public bool AdjustValue(uint increment, bool add)
+        public bool AdjustValue(uint increment, bool add, string walletName)
         {
-            uint newValue;
-            try
+            if (!Wallets.ContainsKey(walletName))
             {
-                checked
-                {
-                    newValue = add ? Value + increment : Value - increment;
-                }
-            }
-            catch (OverflowException)
-            {
-                if (add)
-                    IOStream.OutputError($"Addition value {increment} is too large.");
-                else
-                    IOStream.OutputError($"You only have {Value} VND.");
+                IOStream.OutputError($"User {Username} does not have a wallet with the name \"{walletName}\".");
                 return false;
             }
 
-            Value = newValue;
+            if (!Wallets[walletName].AdjustValue(increment, add))
+                return false;
+
             Transaction.Type type = add ? Transaction.Type.ADD : Transaction.Type.SUB;
             Transaction newTrans = new(type)
             {
                 Username = this.Username,
+                WalletName = walletName,
                 Value = increment,
+                Time = DateTime.Now
+            };
+            Transactions.Add(newTrans);
+            return true;
+        }
+
+        public bool AddWallet(string walletName)
+        {
+            if (Wallets.ContainsKey(walletName))
+            {
+                IOStream.OutputError($"You already have a wallet with the name \"{walletName}\".");
+                return false;
+            }
+
+            Wallets.Add(walletName, new Wallet(walletName, 0));
+
+            Transaction.Type type = Transaction.Type.NEWWALLET;
+            Transaction newTrans = new(type)
+            {
+                Username = this.Username,
+                WalletName = walletName,
+                Time = DateTime.Now
             };
             Transactions.Add(newTrans);
             return true;

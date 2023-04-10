@@ -1,7 +1,6 @@
 ﻿using Expenser.Core;
 using Expenser.User;
 using Expenser.Utility;
-using System.Transactions;
 
 namespace Expenser.State
 {
@@ -28,12 +27,20 @@ namespace Expenser.State
             AddOperation(rule2, func2);
 
             RuleChecker rule3 = new("add", new Type[] { typeof(uint) });
-            Function func3 = Add;
+            Function func3 = AddDefault;
             AddOperation(rule3, func3);
 
+            RuleChecker rule325 = new("add", new Type[] { typeof(uint), typeof(string) });
+            Function func325 = Add;
+            AddOperation(rule325, func325);
+
             RuleChecker rule35 = new("sub", new Type[] { typeof(uint) });
-            Function func35 = Subtract;
+            Function func35 = SubtractDefault;
             AddOperation(rule35, func35);
+
+            RuleChecker rule375 = new("sub", new Type[] { typeof(uint), typeof(string) });
+            Function func375 = Subtract;
+            AddOperation(rule375, func375);
 
             RuleChecker rule4 = new("exit", Array.Empty<Type>());
             Function func4 = Exit;
@@ -42,6 +49,23 @@ namespace Expenser.State
             RuleChecker rule5 = new("signup", new Type[] { typeof(string) });
             Function func5 = SignUp;
             AddOperation(rule5, func5);
+
+            RuleChecker rule55 = new("new", new Type[] { typeof(string) });
+            Function func55 = New;
+            AddOperation(rule55, func55);
+
+            RuleChecker rule6 = new("log", Array.Empty<Type>());
+            Function func6 = () =>
+            {
+                if (GetContext().User == string.Empty)
+                {
+                    IOStream.OutputError("You have not loggin in.");
+                    return;
+                }    
+                else
+                    Statistics.DefaultLog(account.Transactions);
+            };
+            AddOperation(rule6, func6);
         }
 
         private void Login()
@@ -206,14 +230,14 @@ namespace Expenser.State
             if (!passwordConfirmed)
                 return false;
 
-            account = new(username, password, 0, new List<User.Transaction>());
+            account = new(username, password, new(), new());
 
             registeredUsers.Add(username);
             IOStream.Output($"Welcome, {username}!");
             return true;
         }
 
-        private void Add()
+        private void AddDefault()
         {
             Context context = GetContext();
 
@@ -224,13 +248,56 @@ namespace Expenser.State
             }
 
             uint increment = uint.Parse(context.CurrentCommand.Value[0]);
-            if (account.AdjustValue(increment, true))
+            if (account.AdjustValue(increment, true, Wallet.DefaultName))
                 IOStream.Output($"Added {increment:N0} VND to user {account.Username}'s account. You now have {account.Value:N0} VND.");
+        }
+
+        private void Add()
+        {
+            Context context = GetContext();
+            string wallet = context.CurrentCommand.Value[1];
+            if (wallet == Wallet.DefaultName)
+                AddDefault();
+
+            if (string.IsNullOrWhiteSpace(context.User))
+            {
+                IOStream.OutputError("You have not loggin in.");
+                return;
+            }
+
+            uint increment = uint.Parse(context.CurrentCommand.Value[0]);
+
+            if (!Wallet.IsWalletName(wallet))
+            {
+                IOStream.OutputError($"\"{wallet}\" is not a valid wallet name.");
+                return;
+            }
+
+            if (account.AdjustValue(increment, true, wallet))
+                IOStream.Output($"Added {increment:N0} VND to user {account.Username}'s account, wallet \"{wallet}\". You now have {account.Value:N0} VND.");
+        }
+
+        private void SubtractDefault()
+        {
+            Context context = GetContext();
+
+            if (string.IsNullOrWhiteSpace(context.User))
+            {
+                IOStream.OutputError("You have not loggin in.");
+                return;
+            }
+
+            uint increment = uint.Parse(context.CurrentCommand.Value[0]);
+            if (account.AdjustValue(increment, false, Wallet.DefaultName))
+                IOStream.Output($"Subtracted {increment:N0} VND to user {account.Username}'s account. You now have {account.Value:N0} VND.");
         }
 
         private void Subtract()
         {
             Context context = GetContext();
+            string wallet = context.CurrentCommand.Value[1];
+            if (wallet == Wallet.DefaultName)
+                SubtractDefault();
 
             if (string.IsNullOrWhiteSpace(context.User))
             {
@@ -239,8 +306,33 @@ namespace Expenser.State
             }
 
             uint increment = uint.Parse(context.CurrentCommand.Value[0]);
-            if (account.AdjustValue(increment, false))
-                IOStream.Output($"Subtracted {increment:N0} VND to user {account.Username}'s account. You now have {account.Value:N0} VND.");
+
+            if (!Wallet.IsWalletName(wallet))
+            {
+                IOStream.OutputError($"\"{wallet}\" is not a valid wallet name.");
+                return;
+            }
+            if (account.AdjustValue(increment, false, wallet))
+                IOStream.Output($"Subtracted {increment:N0} VND to user {account.Username}'s account, wallet \"{wallet}\". You now have {account.Value:N0} VND.");
+        }
+
+        private void New()
+        {
+            Context context = GetContext();
+            string name = context.CurrentCommand.Value[0];
+            if (!Wallet.IsWalletName(name))
+            {
+                IOStream.OutputError($"\"{name}\" is not a valid wallet name.");
+                return;
+            }
+
+            if (account.AddWallet(name))
+            {
+                IOStream.Output($"Created wallet \"{name}\".");
+                context.Wallet = name;
+                AccountLoader.SaveUserToFile(account);
+                return;
+            }
         }
 
         private void Exit()

@@ -13,8 +13,8 @@ namespace Expenser.User
             Exception cantRead = new($"The file containing your data may be broken and cannot be read.");
 
             string password = "123456";
-            uint value = 0;
             List<Transaction> transactions = new();
+            List<Wallet> wallets = new();
             try
             {
                 string path = $"Users/{username}{GrammarChecker.UserFileSuffix}";
@@ -36,13 +36,6 @@ namespace Expenser.User
                                 throw cantRead;
                             password = line;
                         }
-                        else if (identifier == "Value")
-                        {
-                            string? line = reader.ReadLine();
-                            if (string.IsNullOrEmpty(line) || !uint.TryParse(line, out uint tempValue))
-                                throw cantRead;
-                            value = tempValue;
-                        }
                         else if (identifier == "Transaction")
                         {
                             string? line = reader.ReadLine();
@@ -57,14 +50,26 @@ namespace Expenser.User
                                     throw cantRead;
                             }
                         }
+                        else if (identifier == "Wallet")
+                        {
+                            string? line = reader.ReadLine();
+                            if (string.IsNullOrEmpty(line) || !uint.TryParse(line, out uint count))
+                                throw cantRead;
+                            for (int i = 0; i < count; ++i)
+                            {
+                                if (Wallet.Loader.TryParseFromStream(reader, out Wallet wallet))
+                                    wallets.Add(wallet);
+                                else
+                                    throw cantRead;
+                            }
+                        }
                         else if (identifier == "End")
                             break;
-                        else
-                            return false;
                     }
                     reader.Close();
                 }
-                account = new(username, password, value, transactions);
+                transactions.Sort((Transaction a, Transaction b) => a.Time.CompareTo(b.Time));
+                account = new(username, password, transactions, wallets);
                 return true;
             }
             catch (Exception e)
@@ -91,10 +96,12 @@ namespace Expenser.User
                 using (StreamWriter writer = File.CreateText(path))
                 {
                     writer.WriteLine($"Password\n{user.Password}");
-                    writer.WriteLine($"Value\n{user.Value}");
                     writer.WriteLine($"Transaction\n{user.Transactions.Count}");
                     foreach (Transaction tran in user.Transactions)
                         Transaction.Parser.WriteToStream(writer, tran);
+                    writer.WriteLine($"Wallet\n{user.Wallets.Count}");
+                    foreach (var pair in user.Wallets)
+                        Wallet.Loader.WriteToStream(writer, pair.Value);
                     writer.WriteLine("End");
                     return true;
                 }

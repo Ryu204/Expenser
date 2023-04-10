@@ -67,6 +67,7 @@ namespace Expenser.User
                 transactionValue = value;
             }
         }
+        public DateTime Time { get; set; }
 
         public Transaction(Type type)
         {
@@ -74,6 +75,7 @@ namespace Expenser.User
             username = "None";
             walletName = "None";
             transactionValue = 0;
+            Time = DateTime.Now;
         }
 
         public static class Parser
@@ -82,31 +84,33 @@ namespace Expenser.User
             {
                 try
                 {
-                    writer.WriteLine($"{tran.type} {tran.username} {tran.walletName} {tran.transactionValue}");
+                    writer.WriteLine($"{tran.type},{tran.username},{tran.walletName},{tran.transactionValue},{tran.Time}");
+                    return true;
                 }
                 catch (Exception)
                 {
                     return false;
                 }
-                return true;
             }
 
             public static bool TryParseFromStream(StreamReader reader, ref Transaction trans)
             {
-                string[] words = IOStream.GetInputAsArray(reader);
-                if (words.Length != 4)
+                string[] words = IOStream.GetInputAsArray(reader, ',');
+                if (words.Length != 5)
                     return false;
                 if (!(Account.IsUsername(words[1]) && Wallet.IsWalletName(words[2])))
                     return false;
 
                 string username = words[1], walletName = words[2];
-                if (Enum.TryParse(words[0], out Type type) && uint.TryParse(words[3], out uint transactionValue))
+                if (Enum.TryParse(words[0], out Type type) && uint.TryParse(words[3], out uint transactionValue)
+                    && DateTime.TryParse(words[4], out DateTime time))
                 {
                     trans = new(type)
                     {
                         Username = username,
                         WalletName = walletName,
                         Value = transactionValue,
+                        Time = time
                     };
                     return true;
                 }
