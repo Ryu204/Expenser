@@ -16,23 +16,23 @@ namespace Expenser.State
         {
             RuleChecker rule1 = new("login", new Type[] { typeof(string) });
             Function func1 = Login;
-            AddAction(rule1, func1);
+            AddOperation(rule1, func1);
 
             RuleChecker rule2 = new("logout", Array.Empty<Type>());
             Function func2 = Logout;
-            AddAction(rule2, func2);
+            AddOperation(rule2, func2);
 
             RuleChecker rule3 = new("add", new Type[] { typeof(uint) });
             Function func3 = Add;
-            AddAction(rule3, func3);
+            AddOperation(rule3, func3);
 
             RuleChecker rule4 = new("exit", Array.Empty<Type>());
             Function func4 = Exit;
-            AddAction(rule4, func4);
+            AddOperation(rule4, func4);
 
             RuleChecker rule5 = new("signup", Array.Empty<Type>());
             Function func5 = Signup;
-            AddAction(rule5, func5);
+            AddOperation(rule5, func5);
         }
 
         private void Login()

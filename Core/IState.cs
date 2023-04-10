@@ -11,9 +11,9 @@ namespace Expenser.Core
         private readonly StateStack stack;
 
         protected delegate void Function();
-        private readonly Dictionary<RuleChecker, Function> commandSet = new();
-        private readonly HashSet<string> commandNames = new();
-        RuleChecker? callbackKey = null;
+        private readonly Dictionary<RuleChecker, Function> operations = new();
+        private readonly HashSet<string> operationNames = new();
+        private RuleChecker? callbackKey = null;
 
         public IState(StateStack stack)
         {
@@ -26,7 +26,7 @@ namespace Expenser.Core
         // Check if the command matches a possible rule
         public bool ValidateCommand(Command command, out string message)
         {
-            if (!commandNames.Contains(command.Action))
+            if (!operationNames.Contains(command.Action))
             {
                 message = $"There is no action called \"{command.Action}\" in current context.";
                 return false;
@@ -34,7 +34,7 @@ namespace Expenser.Core
 
             uint matchArgumentCount = 0;
 
-            foreach (var rule in commandSet)
+            foreach (var rule in operations)
             {
                 if (rule.Key.Check(command))
                 {
@@ -56,22 +56,21 @@ namespace Expenser.Core
 
         public void ProcessCommand()
         {
-            Debug.Assert(callbackKey != null && commandSet.ContainsKey(callbackKey));
-            commandSet[callbackKey]();
+            Debug.Assert(callbackKey != null && operations.ContainsKey(callbackKey));
+            operations[callbackKey]();
         }
 
-        protected void AddAction(RuleChecker rule, Function funcion)
+        protected void AddOperation(RuleChecker rule, Function funcion)
         {
-            Debug.Assert(!actions.ContainsKey(rule));
-            actions[rule] = funcion;
-            actionsNames.Add(rule.Action);
+            Debug.Assert(!operations.ContainsKey(rule));
+            operations[rule] = funcion;
+            operationNames.Add(rule.Action);
         }
           
         protected void SwitchTo(string state)
         {
             stack.RegisterSwitchState(state);
         }
-
         protected void CloseStack()
         {
             stack.RegisterClose();
