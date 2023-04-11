@@ -10,7 +10,7 @@ namespace Expenser.User
         private string walletName;
         private uint transactionValue;
 
-        private enum Component
+        public enum Component
         {
             NONE = 0,
             USERNAME = 1 << 0,
@@ -22,7 +22,8 @@ namespace Expenser.User
         {
             ADD = Component.USERNAME | Component.WALLETNAME | Component.VALUE | (Component.VALID << 1),
             SUB = Component.USERNAME | Component.WALLETNAME | Component.VALUE | (Component.VALID << 2),
-            NEWWALLET = Component.USERNAME | Component.WALLETNAME | Component.VALUE | (Component.VALID << 3)
+            NEWWALLET = Component.USERNAME | Component.WALLETNAME | (Component.VALID << 3),
+            RMWALLET = Component.USERNAME | Component.WALLETNAME | (Component.VALID << 4)
         }
 
         public Type Operation { get { return type; } }
@@ -107,9 +108,9 @@ namespace Expenser.User
                 {
                     trans = new(type)
                     {
-                        Username = username,
-                        WalletName = walletName,
-                        Value = transactionValue,
+                        username = username,
+                        walletName = walletName,
+                        transactionValue = transactionValue,
                         Time = time
                     };
                     return true;

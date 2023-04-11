@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using Expenser.Utility;
+using System.Diagnostics;
 using System.Net.NetworkInformation;
 
 namespace Expenser.Core
@@ -58,6 +59,15 @@ namespace Expenser.Core
         {
             Debug.Assert(callbackKey != null && operations.ContainsKey(callbackKey));
             operations[callbackKey]();
+            Command cmd = GetContext().CurrentCommand;
+
+            if (cmd.Flags.Count > 0)
+            {
+                IOStream.OutputOther("Ignored flag(s):", false);
+                foreach (var flag in cmd.Flags)
+                    IOStream.OutputOther($" {flag}", false);
+                IOStream.OutputOther(".");
+            }
         }
 
         protected void AddOperation(RuleChecker rule, Function funcion)

@@ -54,56 +54,60 @@ namespace Expenser.State
             Function func55 = New;
             AddOperation(rule55, func55);
 
+            RuleChecker rule575 = new("delete", new Type[] { typeof(string) });
+            Function func575 = Delete;
+            AddOperation(rule575, func575);
+
             RuleChecker rule6 = new("log", Array.Empty<Type>());
-            Function func6 = () =>
-            {
-                if (GetContext().User == string.Empty)
-                {
-                    IOStream.OutputError("You have not loggin in.");
-                    return;
-                }    
-                else
-                    Statistics.DefaultLog(account.Transactions);
-            };
+            Function func6 = Log;
             AddOperation(rule6, func6);
+
+            RuleChecker rule7 = new("log", new Type[] { typeof(DateOnly) });
+            Function func7 = LogOneDay;
+            AddOperation(rule7, func7);
         }
 
-        private void Login()
+        private bool CheckLoggedOut()
         {
-            Context context = GetContext();
-
-            if (context.User != string.Empty)
+            if (GetContext().User != string.Empty)
             {
-                IOStream.OutputError($"You must log out first, {context.User}.");
-                return;
+                IOStream.OutputError($"You must log out first, {GetContext().User}.");
+                return false;
             }
+            return true;
+        }
 
-            string username = context.CurrentCommand.Value[0];
+        private bool CheckLoggedIn()
+        {
+            if (GetContext().User == string.Empty)
+            {
+                IOStream.OutputError($"You must log in first.");
+                return false;
+            }
+            return true;
+        }
+
+        private bool CheckValidUsername(string username)
+        {
             if (!Account.IsUsername(username))
             {
                 IOStream.OutputError($"{username} is not a valid username.");
-                return;
+                return false;
             }
+            return true;
+        }
 
+        private bool CheckUserExist(string username)
+        {
             if (!registeredUsers.Contains(username))
             {
                 IOStream.OutputError($"Username {username} does not exist.");
-                return;
+                return false;
             }
-
-            Account acc = new();
-            if (!AccountLoader.TryLoadUserFromFile(username, ref acc))
-                return;
-
-            if (!AuthoriseLogin(acc.Password))
-                return;
-
-            account = acc;
-            context.User = username;
-            IOStream.Output($"Hello {username}. You currently have {account.Value:N0} VND in your account.");
+            return true;
         }
 
-        private bool AuthoriseLogin(string password)
+        private bool AuthorisePassword(string password)
         {
             string? input;
             try
@@ -117,7 +121,7 @@ namespace Expenser.State
                     else
                     {
                         IOStream.OutputError("Wrong password.");
-                        if (IOStream.TryAgainPrompt())
+                        if (IOStream.YesNoPrompt("Try again?"))
                             continue;
                         else
                             break;
@@ -131,15 +135,32 @@ namespace Expenser.State
             return false;
         }
 
+        private void Login()
+        {
+            Context context = GetContext();
+            if (!CheckLoggedOut())
+                return;
+            string username = context.CurrentCommand.Value[0];
+            if (!CheckValidUsername(username))
+                return;
+            if (!CheckUserExist(username))
+                return;
+            Account acc = new();
+            if (!AccountLoader.TryLoadUserFromFile(username, ref acc))
+                return;
+            if (!AuthorisePassword(acc.Password))
+                return;
+            account = acc;
+            context.User = username;
+            IOStream.Output($"Hello {username}. You currently have {account.Value:N0} VND in your account.");
+        }
+
         private void Logout()
         {
             Context context = GetContext();
 
-            if (context.User == string.Empty)
-            {
-                IOStream.OutputError("You have not logged in.");
+            if (!CheckLoggedIn())
                 return;
-            }
             AccountLoader.SaveUserToFile(account);
             IOStream.Output("Logged out.");
             context.Reset();
@@ -165,25 +186,16 @@ namespace Expenser.State
         private void SignUp()
         {
             Context context = GetContext();
-            if (context.User != string.Empty)
-            {
-                IOStream.OutputError($"You must logout first, {context.User}.");
+            if (!CheckLoggedOut())
                 return;
-            }
-
             string username = context.CurrentCommand.Value[0];
-            if (!Account.IsUsername(username))
-            {
-                IOStream.OutputError($"{username} is not a valid username.");
+            if (!CheckValidUsername(username))
                 return;
-            }
-
             if (registeredUsers.Contains(username))
             {
                 IOStream.OutputError($"Username {username} has been taken.");
                 return;
             }
-
             if (AuthoriseSignUp(username))
             {
                 context.Reset();
@@ -206,7 +218,7 @@ namespace Expenser.State
                 if (password == null || !Account.IsPassword(password))
                 {
                     IOStream.OutputError("Password must be a combination of at least 6 letters and/or digits.");
-                    if (IOStream.TryAgainPrompt())
+                    if (IOStream.YesNoPrompt("Try again?"))
                         continue;
                     else
                         break;
@@ -241,15 +253,12 @@ namespace Expenser.State
         {
             Context context = GetContext();
 
-            if (string.IsNullOrWhiteSpace(context.User))
-            {
-                IOStream.OutputError("You have not loggin in.");
+            if (!CheckLoggedIn())
                 return;
-            }
 
             uint increment = uint.Parse(context.CurrentCommand.Value[0]);
             if (account.AdjustValue(increment, true, Wallet.DefaultName))
-                IOStream.Output($"Added {increment:N0} VND to user {account.Username}'s account. You now have {account.Value:N0} VND.");
+                IOStream.Output($"Added {increment:N0} VND to your account. You now have {account.Value:N0} VND.");
         }
 
         private void Add()
@@ -257,13 +266,13 @@ namespace Expenser.State
             Context context = GetContext();
             string wallet = context.CurrentCommand.Value[1];
             if (wallet == Wallet.DefaultName)
-                AddDefault();
-
-            if (string.IsNullOrWhiteSpace(context.User))
             {
-                IOStream.OutputError("You have not loggin in.");
+                AddDefault();
                 return;
             }
+
+            if (!CheckLoggedIn())
+                return;
 
             uint increment = uint.Parse(context.CurrentCommand.Value[0]);
 
@@ -274,22 +283,19 @@ namespace Expenser.State
             }
 
             if (account.AdjustValue(increment, true, wallet))
-                IOStream.Output($"Added {increment:N0} VND to user {account.Username}'s account, wallet \"{wallet}\". You now have {account.Value:N0} VND.");
+                IOStream.Output($"Added {increment:N0} VND to wallet \"{wallet}\". You now have {account.Value:N0} VND.");
         }
 
         private void SubtractDefault()
         {
             Context context = GetContext();
 
-            if (string.IsNullOrWhiteSpace(context.User))
-            {
-                IOStream.OutputError("You have not loggin in.");
+            if (!CheckLoggedIn())
                 return;
-            }
 
             uint increment = uint.Parse(context.CurrentCommand.Value[0]);
             if (account.AdjustValue(increment, false, Wallet.DefaultName))
-                IOStream.Output($"Subtracted {increment:N0} VND to user {account.Username}'s account. You now have {account.Value:N0} VND.");
+                IOStream.Output($"Subtracted {increment:N0} VND to your account. You now have {account.Value:N0} VND.");
         }
 
         private void Subtract()
@@ -297,13 +303,13 @@ namespace Expenser.State
             Context context = GetContext();
             string wallet = context.CurrentCommand.Value[1];
             if (wallet == Wallet.DefaultName)
-                SubtractDefault();
-
-            if (string.IsNullOrWhiteSpace(context.User))
             {
-                IOStream.OutputError("You have not loggin in.");
+                SubtractDefault();
                 return;
             }
+
+            if (!CheckLoggedIn())
+                return;
 
             uint increment = uint.Parse(context.CurrentCommand.Value[0]);
 
@@ -313,13 +319,15 @@ namespace Expenser.State
                 return;
             }
             if (account.AdjustValue(increment, false, wallet))
-                IOStream.Output($"Subtracted {increment:N0} VND to user {account.Username}'s account, wallet \"{wallet}\". You now have {account.Value:N0} VND.");
+                IOStream.Output($"Subtracted {increment:N0} VND to wallet \"{wallet}\". You now have {account.Value:N0} VND.");
         }
 
         private void New()
         {
             Context context = GetContext();
             string name = context.CurrentCommand.Value[0];
+            if (!CheckLoggedIn())
+                return;
             if (!Wallet.IsWalletName(name))
             {
                 IOStream.OutputError($"\"{name}\" is not a valid wallet name.");
@@ -335,13 +343,126 @@ namespace Expenser.State
             }
         }
 
+        private void Delete()
+        {
+            if (GetContext().User != string.Empty)
+                DeleteWallet();
+            else
+                DeleteAccount();
+        }
+
+        private void DeleteAccount()
+        {
+            Context context = GetContext();
+
+            string name = context.CurrentCommand.Value[0];
+            if (!CheckLoggedOut())
+                return;
+            if (!CheckValidUsername(name))
+                return;
+            if (!CheckUserExist(name))
+                return;
+            Account acc = new();
+            if (!AccountLoader.TryLoadUserFromFile(name, ref acc))
+            {
+                IOStream.OutputError($"There was a problem checking user {name}'s data. The deletion could not proceed.");
+                return;
+            }
+            if (AuthorisePassword(acc.Password))
+            {
+                try
+                {
+                    registeredUsers.Remove(name);
+                    File.Delete($"Users/{name}{GrammarChecker.UserFileSuffix}");
+                    SaveUserList();
+                    IOStream.Output($"User {name}'s data has been removed from the database.");
+                }
+                catch(Exception e)
+                {
+                    IOStream.OutputError("The deletion failed because of system error:");
+                    Console.WriteLine(e.Message);
+                    return;
+                }
+            }
+        }
+
+        private void DeleteWallet()
+        {
+            Context context = GetContext();
+            string name = context.CurrentCommand.Value[0];
+
+            if (!CheckLoggedIn())
+                return;
+            if (!Wallet.IsWalletName(name))
+            {
+                IOStream.OutputError($"\"{name}\" is not a valid wallet name.");
+                return;
+            }
+            if (name == Wallet.DefaultName)
+            {
+                IOStream.OutputError($"You cannot delete this wallet.");
+                return;
+            }
+            if (!account.Wallets.ContainsKey(name))
+            {
+                IOStream.OutputError($"You does not have a wallet with the name \"{name}\".");
+                return;
+            }
+            if (account.RemoveWallet(name))
+            {
+                IOStream.Output($"\"{name}\" has been removed from your wallet list.");
+                AccountLoader.SaveUserToFile(account);
+            }
+        }
+
         private void Exit()
         {
-            if (!string.IsNullOrWhiteSpace(GetContext().User))
+            if (GetContext().User != string.Empty)
                 AccountLoader.SaveUserToFile(account);
             
             IOStream.Output("Goodbye.");
             CloseStack();
+        }
+
+        private void Log()
+        {
+            Context context = GetContext();
+            if (context.User == string.Empty)
+            {
+                IOStream.OutputError("You have not loggin in.");
+                return;
+            }
+            else
+            {
+                int flag = 0;
+                if (context.CurrentCommand.Flags.Contains("short"))
+                {
+                    flag = (int)(Statistics.Flag.ACTION | Statistics.Flag.TIME);
+                    context.CurrentCommand.Flags.Remove("short");
+                }
+                Statistics.DefaultLog(account.Transactions, flag);
+            }
+        }
+
+        private void LogOneDay()
+        {
+            Context context = GetContext();
+            if (context.User == string.Empty)
+            {
+                IOStream.OutputError("You have not loggin in.");
+                return;
+            }
+            else
+            {
+                DateOnly date = DateOnly.Parse(context.CurrentCommand.Value[0]);
+                int flag = 0;
+                if (context.CurrentCommand.Flags.Contains("short"))
+                {
+                    flag = (int)(Statistics.Flag.ACTION | Statistics.Flag.TIME);
+                    context.CurrentCommand.Flags.Remove("short");
+                }
+                Statistics.LogOneDay(account.Transactions, date, flag);
+            }
         }
     }
 }

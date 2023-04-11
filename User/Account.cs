@@ -106,5 +106,33 @@ namespace Expenser.User
             Transactions.Add(newTrans);
             return true;
         }
+
+        public bool RemoveWallet(string walletName)
+        {
+            if (!Wallets.ContainsKey(walletName))
+            {
+                IOStream.OutputError($"You have no wallet with the name \"{walletName}\".");
+                return false;
+            }
+
+            Wallet wallet = Wallets[walletName];
+            if (!AdjustValue(wallet.Value, true, Wallet.DefaultName))
+            {
+                IOStream.OutputError($"Your spare money is too much to add more money from wallet \"{walletName}\"");
+                return false;
+            }
+
+            Wallets.Remove(walletName);
+
+            Transaction.Type type = Transaction.Type.RMWALLET;
+            Transaction newTrans = new(type)
+            {
+                Username = this.Username,
+                WalletName = walletName,
+                Time = DateTime.Now
+            };
+            Transactions.Add(newTrans);
+            return true;
+        }
     }
 }

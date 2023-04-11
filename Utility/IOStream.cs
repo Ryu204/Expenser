@@ -19,9 +19,9 @@ namespace Expenser.Utility
             ConsoleColor.White
         };
 
-        public static void Output(string message, bool newline = true)
+        public static void Output(string message, bool newline = true, ConsoleColor color = ConsoleColor.Green)
         {
-            Console.ForegroundColor = Colors[(int)ColorCode.NORMAL];
+            Console.ForegroundColor = color;
             Console.Write(message);
             if (newline)
                 Console.WriteLine();
@@ -46,7 +46,9 @@ namespace Expenser.Utility
 
         private static void PromptInput()
         {
-            Console.Write(">>> ");
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.Write("************************************************************************************\n>>> ");
+            Console.ForegroundColor = Colors[(int)ColorCode.DEFAULT];
         }
 
         public static string[] GetInputAsArray()
@@ -80,9 +82,9 @@ namespace Expenser.Utility
                 return res.Split(separator, StringSplitOptions.RemoveEmptyEntries);
         }
 
-        public static bool TryAgainPrompt()
+        public static bool YesNoPrompt(string message)
         {
-            OutputOther("Try again? [y/n] ", false);
+            OutputOther($"{message} [y/n] ", false);
             string? inp = Console.ReadLine();
             if (inp == null)
                 return false;
