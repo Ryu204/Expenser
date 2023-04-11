@@ -1,6 +1,7 @@
 ﻿using Expenser.Utility;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
+using System.Xml.Linq;
 
 namespace Expenser.Core
 { 
@@ -22,6 +23,8 @@ namespace Expenser.Core
         }
 
         public virtual void Init() { }
+
+        protected abstract void Save();
 
         // Should be checked before a call to ProcessCommand is made
         // Check if the command matches a possible rule
@@ -59,8 +62,8 @@ namespace Expenser.Core
         {
             Debug.Assert(callbackKey != null && operations.ContainsKey(callbackKey));
             operations[callbackKey]();
-            Command cmd = GetContext().CurrentCommand;
 
+            Command cmd = GetContext().CurrentCommand;
             if (cmd.Flags.Count > 0)
             {
                 IOStream.OutputOther("Ignored flag(s):", false);
@@ -68,6 +71,8 @@ namespace Expenser.Core
                     IOStream.OutputOther($" {flag}", false);
                 IOStream.OutputOther(".");
             }
+
+            Save();
         }
 
         protected void AddOperation(RuleChecker rule, Function funcion)

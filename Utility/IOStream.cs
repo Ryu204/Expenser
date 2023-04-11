@@ -47,7 +47,7 @@ namespace Expenser.Utility
         private static void PromptInput()
         {
             Console.ForegroundColor = ConsoleColor.Gray;
-            Console.Write("************************************************************************************\n>>> ");
+            Console.Write("*************************************************************\n>>> ");
             Console.ForegroundColor = Colors[(int)ColorCode.DEFAULT];
         }
 

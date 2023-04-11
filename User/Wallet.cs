@@ -13,7 +13,7 @@ namespace Expenser.User
     {
         public string Name { get; }
         public uint Value { get; private set; }
-        public static readonly string DefaultName = "Other";
+        public static readonly string DefaultName = "_Other";
 
         public Wallet(string name, uint value)
         {
@@ -23,6 +23,8 @@ namespace Expenser.User
 
         public static bool IsWalletName(string name)
         {
+            if (name == DefaultName) 
+                return true;
             return GrammarChecker.IsAllLetter(name) && name.Length >= 2;
         }
 

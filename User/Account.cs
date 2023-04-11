@@ -122,6 +122,7 @@ namespace Expenser.User
                 return false;
             }
 
+            AdjustValue(wallet.Value, false, walletName);
             Wallets.Remove(walletName);
 
             Transaction.Type type = Transaction.Type.RMWALLET;

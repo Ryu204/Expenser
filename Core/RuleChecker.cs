@@ -26,6 +26,14 @@ namespace Expenser.Core
                 return false;
             for (int i = 0; i < Arguments.Length; ++i)
             {
+                // Special case for date because it has weird format
+                if (Arguments[i] == typeof(DateOnly))
+                {
+                    if (!DateOnly.TryParseExact(command.Value[i], new string[]{"d/M","d/M/Y","d/M/y"}, out DateOnly res))
+                        return false;
+                    continue;
+                }
+
                 TypeConverter converter = TypeDescriptor.GetConverter(Arguments[i]);
 
                 if (!converter.IsValid(command.Value[i]))

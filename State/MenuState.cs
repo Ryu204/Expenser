@@ -1,6 +1,8 @@
 ﻿using Expenser.Core;
+using Expenser.Report;
 using Expenser.User;
 using Expenser.Utility;
+using System.Globalization;
 
 namespace Expenser.State
 {
@@ -65,6 +67,12 @@ namespace Expenser.State
             RuleChecker rule7 = new("log", new Type[] { typeof(DateOnly) });
             Function func7 = LogOneDay;
             AddOperation(rule7, func7);
+        }
+
+        protected override void Save()
+        {
+            if (GetContext().User != string.Empty)
+                AccountLoader.SaveUserToFile(account);
         }
 
         private bool CheckLoggedOut()
@@ -338,7 +346,6 @@ namespace Expenser.State
             {
                 IOStream.Output($"Created wallet \"{name}\".");
                 context.Wallet = name;
-                AccountLoader.SaveUserToFile(account);
                 return;
             }
         }
@@ -411,15 +418,11 @@ namespace Expenser.State
             if (account.RemoveWallet(name))
             {
                 IOStream.Output($"\"{name}\" has been removed from your wallet list.");
-                AccountLoader.SaveUserToFile(account);
             }
         }
 
         private void Exit()
-        {
-            if (GetContext().User != string.Empty)
-                AccountLoader.SaveUserToFile(account);
-            
+        {            
             IOStream.Output("Goodbye.");
             CloseStack();
         }
@@ -434,13 +437,13 @@ namespace Expenser.State
             }
             else
             {
-                int flag = 0;
+                bool shortVersion = false;
                 if (context.CurrentCommand.Flags.Contains("short"))
                 {
-                    flag = (int)(Statistics.Flag.ACTION | Statistics.Flag.TIME);
+                    shortVersion = true;
                     context.CurrentCommand.Flags.Remove("short");
                 }
-                Statistics.DefaultLog(account.Transactions, flag);
+                Statistics.DefaultLog(account, shortVersion);
             }
         }
 
@@ -455,13 +458,13 @@ namespace Expenser.State
             else
             {
                 DateOnly date = DateOnly.Parse(context.CurrentCommand.Value[0]);
-                int flag = 0;
+                bool shortVersion = false;
                 if (context.CurrentCommand.Flags.Contains("short"))
                 {
-                    flag = (int)(Statistics.Flag.ACTION | Statistics.Flag.TIME);
+                    shortVersion = true;
                     context.CurrentCommand.Flags.Remove("short");
                 }
-                Statistics.LogOneDay(account.Transactions, date, flag);
+                Statistics.LogOneDay(account, date, shortVersion);
             }
         }
     }
