@@ -240,7 +240,9 @@ namespace ConsoleTables
 
         public void Write(Format format = ConsoleTables.Format.Default)
         {
-            Options.OutputTo.Write(ToStringAlternative());
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Options.OutputTo.Write('\n' + ToMarkDownString() + '\n');
+            Console.ForegroundColor = ConsoleColor.White;
         }
 
         private static IEnumerable<string> GetColumns<T>()

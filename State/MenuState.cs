@@ -3,6 +3,7 @@ using Expenser.Report;
 using Expenser.User;
 using Expenser.Utility;
 using System.Globalization;
+using System.Xml.Linq;
 
 namespace Expenser.State
 {
@@ -67,6 +68,14 @@ namespace Expenser.State
             RuleChecker rule7 = new("log", new Type[] { typeof(DateOnly) });
             Function func7 = LogOneDay;
             AddOperation(rule7, func7);
+
+            RuleChecker rule8 = new("log", new Type[] { typeof(DateOnly), typeof(DateOnly) });
+            Function func8 = LogFromTo;
+            AddOperation(rule8, func8);
+
+            RuleChecker rule9 = new("log", new Type[] { typeof(string) });
+            Function func9 = LogOneWallet;
+            AddOperation(rule9, func9);
         }
 
         protected override void Save()
@@ -80,6 +89,7 @@ namespace Expenser.State
             if (GetContext().User != string.Empty)
             {
                 IOStream.OutputError($"You must log out first, {GetContext().User}.");
+                IOStream.OutputOther("[help] Try \"logout\" to log out.");
                 return false;
             }
             return true;
@@ -90,6 +100,7 @@ namespace Expenser.State
             if (GetContext().User == string.Empty)
             {
                 IOStream.OutputError($"You must log in first.");
+                IOStream.OutputOther("[help] Try \"login <username>\" to log in.");
                 return false;
             }
             return true;
@@ -100,6 +111,7 @@ namespace Expenser.State
             if (!Account.IsUsername(username))
             {
                 IOStream.OutputError($"{username} is not a valid username.");
+                IOStream.OutputOther("[help] An username consists of only letters.");
                 return false;
             }
             return true;
@@ -430,42 +442,104 @@ namespace Expenser.State
         private void Log()
         {
             Context context = GetContext();
-            if (context.User == string.Empty)
-            {
-                IOStream.OutputError("You have not loggin in.");
+            if (!CheckLoggedIn())
                 return;
-            }
             else
             {
+                HashSet<string> flags = context.CurrentCommand.Flags;
                 bool shortVersion = false;
-                if (context.CurrentCommand.Flags.Contains("short"))
+                DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+                if (flags.Contains("short"))
                 {
                     shortVersion = true;
-                    context.CurrentCommand.Flags.Remove("short");
+                    flags.Remove("short");
                 }
-                Statistics.DefaultLog(account, shortVersion);
+                
+                if (flags.Contains("day"))
+                {
+                    Statistics.LogOneDay(account, today, shortVersion);
+                    flags.Remove("day");
+                }
+                else if (flags.Contains("week"))
+                {
+                    Statistics.LogFromTo(account, today.AddDays(-7), today, shortVersion);
+                    flags.Remove("week");
+                }
+                else if (flags.Contains("month"))
+                {
+                    Statistics.LogFromTo(account, today.AddDays(-30), today, shortVersion);
+                    flags.Remove("month");
+                }
+                else if (flags.Contains("year"))
+                {
+                    Statistics.LogFromTo(account, today.AddDays(-365), today, shortVersion);
+                    flags.Remove("year");
+                }
+                else
+                    Statistics.DefaultLog(account, shortVersion);
             }
         }
 
         private void LogOneDay()
         {
             Context context = GetContext();
-            if (context.User == string.Empty)
+            if (!CheckLoggedIn())
+                return;
+            DateOnly date = DateOnly.Parse(context.CurrentCommand.Value[0]);
+            bool shortVersion = false;
+            if (context.CurrentCommand.Flags.Contains("short"))
             {
-                IOStream.OutputError("You have not loggin in.");
+                shortVersion = true;
+                context.CurrentCommand.Flags.Remove("short");
+            }
+            Statistics.LogOneDay(account, date, shortVersion);
+        }
+
+        private void LogFromTo()
+        {
+            Context context = GetContext();
+            if (!CheckLoggedIn())
+                return;
+            DateOnly begin = DateOnly.Parse(context.CurrentCommand.Value[0]);
+            DateOnly end = DateOnly.Parse(context.CurrentCommand.Value[1]);
+            if (end < begin)
+            {
+                var tmp = end; end = begin; begin = tmp;
+            }
+            bool shortVersion = false;
+            if (context.CurrentCommand.Flags.Contains("short"))
+            {
+                shortVersion = true;
+                context.CurrentCommand.Flags.Remove("short");
+            }
+            Statistics.LogFromTo(account, begin, end, shortVersion);
+        }
+
+        private void LogOneWallet()
+        {
+            Context context = GetContext();
+            if (!CheckLoggedIn())
+                return;
+            string name = context.CurrentCommand.Value[0];
+            if (!Wallet.IsWalletName(name))
+            {
+                IOStream.OutputError($"\"{name}\" is not a valid wallet name.");
                 return;
             }
-            else
+            if (!account.Wallets.ContainsKey(name))
             {
-                DateOnly date = DateOnly.Parse(context.CurrentCommand.Value[0]);
-                bool shortVersion = false;
-                if (context.CurrentCommand.Flags.Contains("short"))
-                {
-                    shortVersion = true;
-                    context.CurrentCommand.Flags.Remove("short");
-                }
-                Statistics.LogOneDay(account, date, shortVersion);
+                IOStream.OutputError($"You does not have a wallet with the name \"{name}\".");
+                return;
             }
+            bool shortVersion = false;
+            var flags = context.CurrentCommand.Flags;
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            if (flags.Contains("short"))
+            {
+                shortVersion = true;
+                context.CurrentCommand.Flags.Remove("short");
+            }
+            Statistics.LogOneWallet(account, name, shortVersion);
         }
     }
 }

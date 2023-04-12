@@ -1,6 +1,7 @@
 ﻿using Expenser.User;
 using Expenser.Utility;
 using ConsoleTables;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Expenser.Report
 {
@@ -9,13 +10,6 @@ namespace Expenser.Report
     /// </summary>
     public static class Statistics
     {
-        public enum Flag
-        {
-            NONE = 0,
-            ACTION = 1 << 0,
-            TIME = 1 << 1,
-        }
-
         private static string OperationToString(Transaction.Type type, bool shortVersion)
         {
             switch (type)
@@ -72,20 +66,31 @@ namespace Expenser.Report
         {
             IOStream.Output("Current state:");
             TableFromWallets(account.Wallets).Write();
-            IOStream.Output("Past transaction(s):");
             ConsoleTable table = CreateTable(shortVer);
+            // Create a new line between 2 different dates
+            DateOnly? date = null;
             foreach (var tran in account.Transactions)
+            {
+                if (date == null)
+                    date = DateOnly.FromDateTime(tran.Time);
+                else if (date != DateOnly.FromDateTime(tran.Time))
+                {
+                    date = DateOnly.FromDateTime(tran.Time);
+                    table.AddRow(string.Empty, string.Empty, string.Empty, string.Empty);
+                }
                 AddRowToDefaultTable(table, tran, shortVer);
+            }
+            IOStream.Output($"There were {account.Transactions.Count} transaction(s) in total:");
             table.Write();
             IOStream.Output($"You now have {account.Value:N0} VND.");
         }
 
-        public static void LogOneDay(Account account, DateOnly date, bool shortVer)
+        public static void LogFromTo(Account account, DateOnly begin, DateOnly end, bool shortVer)
         {
             Dictionary<string, Wallet> wallets = AccountReverter.FetchFromAccount(account);
             uint before, after;
 
-            Func<uint> Sum = () => 
+            Func<uint> Sum = () =>
             {
                 uint res = 0;
                 foreach (var wallet in wallets.Values)
@@ -95,7 +100,7 @@ namespace Expenser.Report
             // Revert the time to before the start of the day
             for (int i = account.Transactions.Count - 1; i >= 0; --i)
             {
-                if (date > DateOnly.FromDateTime(account.Transactions[i].Time.Date))
+                if (begin > DateOnly.FromDateTime(account.Transactions[i].Time.Date))
                     break;
                 else
                     AccountReverter.Revert(wallets, account.Transactions[i]);
@@ -109,17 +114,21 @@ namespace Expenser.Report
                 TableFromWallets(wallets).Write();
 
             // Render what happened
-            IOStream.Output($"Operations at ", false, ConsoleColor.White);
-            IOStream.Output($"{date.ToShortDateString()}: ");
             ConsoleTable mainTable = CreateTable(shortVer);
+            uint operationCount = 0;
             foreach (var tran in account.Transactions)
             {
-                if (date == DateOnly.FromDateTime(tran.Time))
+                if (begin <= DateOnly.FromDateTime(tran.Time) 
+                    && DateOnly.FromDateTime(tran.Time) <= end)
                 {
+                    ++operationCount;
                     AddRowToDefaultTable(mainTable, tran, shortVer);
                     AccountReverter.Accumulate(wallets, tran);
                 }
             }
+            IOStream.Output($"There were {operationCount} operation(s) during: ", false, ConsoleColor.White);
+            IOStream.Output($"{begin.ToShortDateString()} - {end.ToShortDateString()}:");
+            
             mainTable.Write();
 
             // Render the final result
@@ -134,5 +143,71 @@ namespace Expenser.Report
             if (!shortVer)
                 TableFromWallets(wallets).Write();
         }
+
+        public static void LogOneDay(Account account, DateOnly date, bool shortVer)
+        {
+            LogFromTo(account, date, date, shortVer);
+        }
+
+        public static void LogOneWallet(Account account, string name, bool shortVer)
+        {
+            IOStream.Output("Current value: ", false, ConsoleColor.White);
+            IOStream.Output($"{account.Wallets[name].Value:N0} VND");
+
+            ConsoleTable table = shortVer ? new("Date", "Opr", "Val", "Tot") : new("Date", "Operation", "Value", "Total"); 
+            // Create a new line between 2 different dates
+            DateOnly? date = null;
+            uint currentValue = account.Wallets[name].Value;
+
+            for (int i = account.Transactions.Count - 1; i >= 0; --i)
+            {
+                var tran = account.Transactions[i];
+                string wallet = ((int)tran.Operation & (int)Transaction.Component.WALLETNAME) != 0 ? tran.WalletName : string.Empty;
+                if (wallet != name)
+                    continue;
+                if (tran.Operation == Transaction.Type.ADD)
+                    currentValue -= account.Transactions[i].Value;
+                else if (tran.Operation == Transaction.Type.SUB)
+                    currentValue += account.Transactions[i].Value;
+            }    
+            foreach (var tran in account.Transactions)
+            {
+                string wallet = ((int)tran.Operation & (int)Transaction.Component.WALLETNAME) != 0 ? tran.WalletName : string.Empty;
+                if (wallet != name)
+                    continue;
+                if (tran.Operation == Transaction.Type.ADD || tran.Operation == Transaction.Type.SUB)
+                {
+                    // New row if new day
+                    if (date == null)
+                        date = DateOnly.FromDateTime(tran.Time);
+                    else if (date != DateOnly.FromDateTime(tran.Time))
+                    {
+                        date = DateOnly.FromDateTime(tran.Time);
+                        table.AddRow(string.Empty, string.Empty, string.Empty, string.Empty);
+                    }
+                    // Forming table
+                    string dateStr = shortVer ? tran.Time.ToShortDateString() : tran.Time.ToLongDateString();
+                    string operation = OperationToString(tran.Operation, shortVer);
+                    uint value = ((int)tran.Operation & (int)Transaction.Component.VALUE) != 0 ? tran.Value : 0;
+                    string valueStr;
+                    if (tran.Operation == Transaction.Type.ADD)
+                    {
+                        valueStr = $"+ {value:N0} VND";
+                        currentValue += value;
+                    }
+                    else if (tran.Operation == Transaction.Type.SUB)
+                    {
+                        valueStr = $"- {value:N0} VND";
+                        currentValue -= value;
+                    }
+                    else
+                        valueStr = string.Empty;
+                    table.AddRow(dateStr, operation, valueStr, $"{currentValue:N0} VND");
+                }
+            }
+            IOStream.Output("Past transaction(s):");
+            table.Write();
+        }
+
     }
 }
