@@ -63,7 +63,7 @@ namespace Expenser.User
                 return true;
         }
 
-        public bool AdjustValue(uint increment, bool add, string walletName)
+        public bool AdjustValue(uint increment, bool add, string walletName, bool askMessage = true)
         {
             if (!Wallets.ContainsKey(walletName))
             {
@@ -75,12 +75,30 @@ namespace Expenser.User
                 return false;
 
             Transaction.Type type = add ? Transaction.Type.ADD : Transaction.Type.SUB;
+            string? message;
+
+            if (askMessage)
+            {
+                IOStream.Output("Please enter your note. The note can be left blank and have no more than 50 characters");
+                message = Console.ReadLine();
+                if (string.IsNullOrWhiteSpace(message))
+                    message = "None";
+                if (message.Length > 50)
+                {
+                    IOStream.OutputOther($"Trimmed last {message.Length - 50} character(s).");
+                    message = message[..49];
+                }
+            }
+            else
+                message = "None";
+
             Transaction newTrans = new(type)
             {
                 Username = this.Username,
                 WalletName = walletName,
                 Value = increment,
-                Time = DateTime.Now
+                Time = DateTime.Now,
+                Message = message
             };
             Transactions.Add(newTrans);
             return true;
@@ -116,7 +134,7 @@ namespace Expenser.User
             }
 
             Wallet wallet = Wallets[walletName];
-            if (!AdjustValue(wallet.Value, true, Wallet.DefaultName))
+            if (!AdjustValue(wallet.Value, true, Wallet.DefaultName, false))
             {
                 IOStream.OutputError($"Your spare money is too much to add more money from wallet \"{walletName}\"");
                 return false;

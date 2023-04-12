@@ -69,6 +69,7 @@ namespace Expenser.User
             }
         }
         public DateTime Time { get; set; }
+        public string Message { get; set; }
 
         public Transaction(Type type)
         {
@@ -77,6 +78,7 @@ namespace Expenser.User
             walletName = "None";
             transactionValue = 0;
             Time = DateTime.Now;
+            Message = "None";
         }
 
         public static class Parser
@@ -85,7 +87,7 @@ namespace Expenser.User
             {
                 try
                 {
-                    writer.WriteLine($"{tran.type},{tran.username},{tran.walletName},{tran.transactionValue},{tran.Time}");
+                    writer.WriteLine($"{tran.type},{tran.username},{tran.walletName},{tran.transactionValue},{tran.Time},{tran.Message}");
                     return true;
                 }
                 catch (Exception)
@@ -97,7 +99,7 @@ namespace Expenser.User
             public static bool TryParseFromStream(StreamReader reader, ref Transaction trans)
             {
                 string[] words = IOStream.GetInputAsArray(reader, ',');
-                if (words.Length != 5)
+                if (words.Length != 6)
                     return false;
                 if (!(Account.IsUsername(words[1]) && Wallet.IsWalletName(words[2])))
                     return false;
@@ -111,7 +113,8 @@ namespace Expenser.User
                         username = username,
                         walletName = walletName,
                         transactionValue = transactionValue,
-                        Time = time
+                        Time = time,
+                        Message = string.IsNullOrWhiteSpace(words[5]) ? "None" : words[5]
                     };
                     return true;
                 }

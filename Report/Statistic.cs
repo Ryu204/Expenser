@@ -43,7 +43,10 @@ namespace Expenser.Report
                 valueStr = string.Empty;
 
             string wallet = ((int)tran.Operation & (int)Transaction.Component.WALLETNAME) != 0 ? tran.WalletName : string.Empty;
-            table.AddRow(date, operation, wallet, valueStr);
+            if (shortVersion)
+                table.AddRow(date, operation, wallet, valueStr);
+            else
+                table.AddRow(date, operation, wallet, valueStr, tran.Message);
         }
 
         private static ConsoleTable CreateTable(bool shortVer)
@@ -51,7 +54,7 @@ namespace Expenser.Report
             if (shortVer)
                 return new("Date", "Opr", "Wal", "Val");
             else
-                return new("Date", "Operation", "Wallet", "Value");
+                return new("Date", "Operation", "Wallet", "Value", "Message");
         }
 
         private static ConsoleTable TableFromWallets(Dictionary<string, Wallet> wallets)
@@ -154,7 +157,7 @@ namespace Expenser.Report
             IOStream.Output("Current value: ", false, ConsoleColor.White);
             IOStream.Output($"{account.Wallets[name].Value:N0} VND");
 
-            ConsoleTable table = shortVer ? new("Date", "Opr", "Val", "Tot") : new("Date", "Operation", "Value", "Total"); 
+            ConsoleTable table = shortVer ? new("Date", "Opr", "Val", "Tot") : new("Date", "Operation", "Value", "Total", "Message"); 
             // Create a new line between 2 different dates
             DateOnly? date = null;
             uint currentValue = account.Wallets[name].Value;
@@ -183,7 +186,10 @@ namespace Expenser.Report
                     else if (date != DateOnly.FromDateTime(tran.Time))
                     {
                         date = DateOnly.FromDateTime(tran.Time);
-                        table.AddRow(string.Empty, string.Empty, string.Empty, string.Empty);
+                        if (shortVer)
+                            table.AddRow(string.Empty, string.Empty, string.Empty, string.Empty);
+                        else
+                            table.AddRow(string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
                     }
                     // Forming table
                     string dateStr = shortVer ? tran.Time.ToShortDateString() : tran.Time.ToLongDateString();
@@ -202,7 +208,10 @@ namespace Expenser.Report
                     }
                     else
                         valueStr = string.Empty;
-                    table.AddRow(dateStr, operation, valueStr, $"{currentValue:N0} VND");
+                    if (shortVer)
+                        table.AddRow(dateStr, operation, valueStr, $"{currentValue:N0} VND");
+                    else
+                        table.AddRow(dateStr, operation, valueStr, $"{currentValue:N0} VND", tran.Message);
                 }
             }
             IOStream.Output("Past transaction(s):");
