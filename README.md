@@ -37,7 +37,7 @@ Command | Usage
 ``` add <amount of money> <wallet name> ``` | Add some money to a specific wallet
 ``` add <amount of money> ``` | Add some money to spare budget
 ``` sub <amount of money> <wallet name> ``` | Take away some money from a specific wallet
-``` sub <amount of money> ``` | Take away some money from spare budget
+``` sub <amount of money>``` | Take away some money from spare budget
 ``` delete <wallet name>```| Permanently delete a wallet
 ``` log ``` | Show your expenses stats
 ``` log <wallet name>``` | Show stats of a specific wallet
