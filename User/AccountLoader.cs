@@ -125,7 +125,7 @@ namespace Expenser.User
                 if (!File.Exists(path))
                 {
                     IOStream.OutputOther("Unable to load users list. Recovering from local folder...");
-
+                    Directory.CreateDirectory("Users");
                     string[] filenames = Directory.GetFiles("Users");
                     foreach (string file in filenames)
                     {

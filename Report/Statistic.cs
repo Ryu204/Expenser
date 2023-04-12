@@ -1,7 +1,6 @@
 ﻿using Expenser.User;
 using Expenser.Utility;
 using ConsoleTables;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Expenser.Report
 {
