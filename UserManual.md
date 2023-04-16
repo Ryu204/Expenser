@@ -52,7 +52,7 @@ Moreover, if you want to add an amount of money from spare money (the ```_Other`
 add 1000 Eating --transfer
 // take 1000 spare money and add to "Eating"
 subtract 2000 Dancingclass --transfer
-// give up 2000 money from Dancingclass to spare money
+// give up 2000 money from "Dancingclass" to spare budget
 ```
 
 **Note:** You wont be able to call this type of command:
