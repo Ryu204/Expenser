@@ -63,7 +63,21 @@ namespace Expenser.User
                 return true;
         }
 
-        public bool AdjustValue(uint increment, bool add, string walletName, bool askMessage = true)
+        /// <summary>
+        /// Adjust the value of a specific wallet or check if adjustment is valid
+        /// </summary>
+        /// <param name="increment"></param>
+        /// The amount of money added
+        /// <param name="add"></param>
+        /// Specify the operation type (add/subtract)
+        /// <param name="walletName"></param>
+        /// The wallet of operation
+        /// <param name="askMessage"></param>
+        /// Prompt to display a messeage query
+        /// <param name="test"></param>
+        /// Set to true to only check if the operation is valid
+        /// <returns></returns>
+        public bool AdjustValue(uint increment, bool add, string walletName, bool askMessage = true, bool test = false)
         {
             if (!Wallets.ContainsKey(walletName))
             {
@@ -71,7 +85,7 @@ namespace Expenser.User
                 return false;
             }
 
-            if (!Wallets[walletName].AdjustValue(increment, add))
+            if (!Wallets[walletName].AdjustValue(increment, add, test))
                 return false;
 
             Transaction.Type type = add ? Transaction.Type.ADD : Transaction.Type.SUB;
@@ -79,7 +93,7 @@ namespace Expenser.User
 
             if (askMessage)
             {
-                IOStream.Output("Please enter your note. The note can be left blank and have no more than 50 characters");
+                IOStream.Output("Please enter your note. The note can be left blank and have no more than 50 characters. ");
                 message = Console.ReadLine();
                 if (string.IsNullOrWhiteSpace(message))
                     message = "None";
@@ -88,10 +102,11 @@ namespace Expenser.User
                     IOStream.OutputOther($"Trimmed last {message.Length - 50} character(s).");
                     message = message[..49];
                 }
+                message = message.Replace(Transaction.Parser.Separator, '`');
             }
             else
                 message = "None";
-
+            
             Transaction newTrans = new(type)
             {
                 Username = this.Username,
@@ -100,7 +115,8 @@ namespace Expenser.User
                 Time = DateTime.Now,
                 Message = message
             };
-            Transactions.Add(newTrans);
+            if (!test)
+                Transactions.Add(newTrans);
             return true;
         }
 

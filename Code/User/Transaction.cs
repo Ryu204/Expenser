@@ -83,11 +83,13 @@ namespace Expenser.User
 
         public static class Parser
         {
+            public static char Separator = '~';
             public static bool WriteToStream(StreamWriter writer, Transaction tran)
             {
                 try
                 {
-                    writer.WriteLine($"{tran.type},{tran.username},{tran.walletName},{tran.transactionValue},{tran.Time},{tran.Message}");
+                    writer.WriteLine($"{tran.type}{Separator}{tran.username}{Separator}{tran.walletName}"
+                        + $"{Separator}{tran.transactionValue}{Separator}{tran.Time}{Separator}{tran.Message}");
                     return true;
                 }
                 catch (Exception)
@@ -98,7 +100,7 @@ namespace Expenser.User
 
             public static bool TryParseFromStream(StreamReader reader, ref Transaction trans)
             {
-                string[] words = IOStream.GetInputAsArray(reader, ',');
+                string[] words = IOStream.GetInputAsArray(reader, Separator);
                 if (words.Length != 6)
                     return false;
                 if (!(Account.IsUsername(words[1]) && Wallet.IsWalletName(words[2])))
