@@ -78,7 +78,10 @@ namespace Expenser.Report
                 else if (date != DateOnly.FromDateTime(tran.Time))
                 {
                     date = DateOnly.FromDateTime(tran.Time);
-                    table.AddRow(string.Empty, string.Empty, string.Empty, string.Empty);
+                    if (shortVer)
+                        table.AddRow(string.Empty, string.Empty, string.Empty, string.Empty);
+                    else
+                        table.AddRow(string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
                 }
                 AddRowToDefaultTable(table, tran, shortVer);
             }

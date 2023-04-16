@@ -36,7 +36,7 @@ Command | Usage
 
 ## Flag
 
-Flag are used when you want to review your expense more carefully. Available flags:
+Flag are most used when you want to review your expense more carefully. Available flags:
 
 Flag | Usage
 -----|-----
@@ -45,6 +45,15 @@ Flag | Usage
 ```--week```|Limit output in the last week
 ```--month```|Limit output in the last month
 ```--year```|Limit output in the last year
+
+Moreover, if you want to add an amount of money from spare money (the ```_Other``` wallet) to another wallet, use the flag ```--transfer```. For example:
+
+```
+add 1000 Eating --transfer
+// take 1000 spare money and add to "Eating"
+subtract 2000 Dancingclass --transfer
+// give up 2000 money from Dancingclass to spare money
+```
 
 **Note:** You wont be able to call this type of command:
 ```

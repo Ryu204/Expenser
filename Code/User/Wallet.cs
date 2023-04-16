@@ -28,7 +28,8 @@ namespace Expenser.User
             return GrammarChecker.IsAllLetter(name) && name.Length >= 2;
         }
 
-        public bool AdjustValue(uint increment, bool add)
+        // test = true: verify the adjustment only, no transaction made
+        public bool AdjustValue(uint increment, bool add, bool test = false)
         {
             uint newValue;
             try
@@ -57,7 +58,8 @@ namespace Expenser.User
                 return false;
             }
 
-            Value = newValue;
+            if (!test)
+                Value = newValue;
             return true;
         }
 

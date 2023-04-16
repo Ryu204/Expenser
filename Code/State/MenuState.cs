@@ -302,8 +302,19 @@ namespace Expenser.State
                 return;
             }
 
-            if (account.AdjustValue(increment, true, wallet))
-                IOStream.Output($"Added {increment:N0} VND to wallet \"{wallet}\". You now have {account.Value:N0} VND.");
+            if (context.CurrentCommand.Flags.Contains("transfer"))
+            {
+                if (account.AdjustValue(increment, true, wallet, false, true) 
+                    && account.AdjustValue(increment, false, Wallet.DefaultName, false, true))
+                {
+                    account.AdjustValue(increment, false, Wallet.DefaultName, false);
+                    account.AdjustValue(increment, true, wallet);
+                }
+
+                context.CurrentCommand.Flags.Remove("transfer");
+            }
+            else if (account.AdjustValue(increment, true, wallet))
+                    IOStream.Output($"Added {increment:N0} VND to wallet \"{wallet}\". You now have {account.Value:N0} VND.");
         }
 
         private void SubtractDefault()
@@ -338,7 +349,19 @@ namespace Expenser.State
                 IOStream.OutputError($"\"{wallet}\" is not a valid wallet name.");
                 return;
             }
-            if (account.AdjustValue(increment, false, wallet))
+
+            if (context.CurrentCommand.Flags.Contains("transfer"))
+            {
+                if (account.AdjustValue(increment, false, wallet, false, true)
+                    && account.AdjustValue(increment, true, Wallet.DefaultName, false, true))
+                {
+                    account.AdjustValue(increment, true, Wallet.DefaultName, false);
+                    account.AdjustValue(increment, false, wallet);
+                }
+
+                context.CurrentCommand.Flags.Remove("transfer");
+            }
+            else if (account.AdjustValue(increment, false, wallet))
                 IOStream.Output($"Subtracted {increment:N0} VND to wallet \"{wallet}\". You now have {account.Value:N0} VND.");
         }
 
